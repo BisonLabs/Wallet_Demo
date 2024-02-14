@@ -29,11 +29,15 @@ const Layout = ({ children }) => {
     setIsUniSatWalletConnectClicked,
     isUniSatWalletConnected,
     setIsUniSatWalletConnected,
+
+    LABB_endpoint
   } = useWallet();
 
   const [walletName, setWalletName] = useState("");
   const [btcBalance, setBtcBalance] = useState("");
+  const [labbBalance, setLabbBalance] = useState("");
   const [transactionAmount, setTransactionAmount] = useState(0);
+  const [labbAmount, setLabbAmount] = useState(0);
   const [MessageObject, setMessageObject] = useState("");
 
   // Close Wallet Connect Modal
@@ -127,8 +131,30 @@ const Layout = ({ children }) => {
     }
   };
 
+  // Calculate Labb Balance
+  const fetchLabbBalance = async (Address) => {
+    const url = `${LABB_endpoint}/labb_balance`;
+    try {
+      if( ordinalsAddress==''){
+        return;
+      }
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ address: ordinalsAddress }), // Assuming ordinalsAddress is a state or prop
+      });
+      const data = await response.json();
+      setLabbBalance(data.balance/100000000);
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+
   useEffect(() => {
     fetchBTCSum(ordinalsAddress);
+    fetchLabbBalance(ordinalsAddress);
   }, [ordinalsAddress]);
 
   // Test Transaction
@@ -215,6 +241,87 @@ const Layout = ({ children }) => {
         <button
           className="bg-[#FF7248] px-2 border rounded-lg font-bold"
           onClick={onSendBtcClick}
+        >
+          Send Transaction
+        </button>
+      </div>
+    );
+  };
+
+  const sendLabbTransaction = () => {
+    const handleTransactionAmountChange = (event) => {
+      const value = parseFloat(event.target.value);
+      if (value >= 0) {
+        // Only update the state if the value is non-negative
+        setLabbAmount(value);
+      }
+    };
+    const handleMaxAmount = () => {
+      const maxAmount = Math.max(btcBalance - 0.0001, 0);
+      setTransactionAmount(maxAmount);
+    };
+
+    const onSendLabbClick = async () => {
+      const amtMultiplied = parseInt(labbAmount) * Math.pow(10, 8);
+
+      const payload = {
+        method: "peg_in",
+        rAddr: ordinalsAddress,
+        amt: amtMultiplied
+      };
+
+      const requestOptions = {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      };
+      const ec = new TextEncoder()
+      const response = await fetch(`${LABB_endpoint}/bridge_peg_in`, requestOptions);
+      const responseData = await response.json();
+      if(!responseData.address){
+        alert(" bridge peg in address null!");
+        return;
+      }
+      // setLabbResponse(responseData);
+      // console.log("sign transfer address:"+ responseData.address+",amount: "+data.amount)
+      // setIsClicked(true); 
+    };
+
+    return (
+      <div className="flex flex-row mx-5 relative">
+        <button
+          type="button"
+          className="relative w-full bg-white border border-gray-300 rounded-lg pl-3 pr-10 py-2 text-left cursor-default focus:outline-none focus:ring-1 sm:text-sm"
+          aria-haspopup="listbox"
+          aria-expanded="true"
+          aria-labelledby="listbox-label"
+        >
+          <input
+            style={{
+              width: "100%",
+              height: "100%",
+              color: "black",
+              border: "none",
+              background: "transparent",
+              outline: "none",
+            }}
+            type="number"
+            min="0"
+            value={labbAmount}
+            onChange={handleTransactionAmountChange}
+          />
+          <span className="ml-3 absolute inset-y-0 right-0 flex items-center pr-2 ">
+            <p
+              style={{ color: "black", cursor: "pointer" }}
+              onClick={handleMaxAmount}
+            >
+              Max
+            </p>
+          </span>
+        </button>
+        <button
+          className="bg-[#FF7248] px-2 border rounded-lg font-bold"
+          onClick={onSendLabbClick}
         >
           Send Transaction
         </button>
@@ -324,11 +431,17 @@ const Layout = ({ children }) => {
       <div className="flex flex-col text-white px-5 py-5">
         Btc Balance: {btcBalance}
       </div>
+      <div className="flex flex-col text-white px-5 py-5">
+        Labb Balance: {labbBalance}
+      </div>
       <div className="flex flex-row items-center text-white px-5 py-5">
         Send Btc Transaction: {sendTestTransaction()}
       </div>
-      <div className="flex flex-row items-center text-white px-5 py-5">
+      {/* <div className="flex flex-row items-center text-white px-5 py-5">
         Sign Message: {signTextMessage()}
+      </div> */}
+      <div className="flex flex-row items-center text-white px-5 py-5">
+        Send Labb Transaction: {sendLabbTransaction()}
       </div>
       {isModalOpen && (
         <div
