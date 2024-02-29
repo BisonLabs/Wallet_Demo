@@ -353,15 +353,15 @@ const Layout = ({ children }) => {
 
         await signMessage(signMessageOptions);
       }
-      if (isUniSatWalletConnected) {
-        const unisat = window.unisat;
-        try {
-          await unisat.signMessage(JSON.stringify(MessageObject));
-        } catch (e) {
-          alert("Canceled");
-          console.log(e);
-        }
-      }
+      // if (isUniSatWalletConnected) {
+      //   const unisat = window.unisat;
+      //   try {
+      //     await unisat.signMessage(JSON.stringify(MessageObject));
+      //   } catch (e) {
+      //     alert("Canceled");
+      //     console.log(e);
+      //   }
+      // }
     };
     return (
       <div className="flex flex-row mx-5 relative">
